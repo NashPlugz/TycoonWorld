@@ -1,0 +1,12 @@
+name: TycoonWorld
+main: me.nashplugz.tycoonw.TycoonWorld
+version: 1.0
+api-version: 1.21
+description: A plugin for managing plots in a Tycoon world.
+author: NashPlugz
+depend:
+  - Vault
+commands:
+  plot:
+    description: Main command for TycoonWorld plot management
+    usage: /<command> [create|teleport] [args...]
