@@ -13,13 +13,15 @@ public class PlotWorld extends ChunkGenerator {
     public static final int PLOT_HEIGHT = 64;
     public static final int TOTAL_SIZE = PLOT_SIZE + 2 * BORDER_WIDTH + PATH_WIDTH;
 
+    // Remove the RELATIVE_COORDS array as it's not needed
+
     @Override
     public void generateNoise(WorldInfo worldInfo, Random random, int chunkX, int chunkZ, ChunkData chunkData) {
+        int startX = chunkX << 4;
+        int startZ = chunkZ << 4;
         for (int x = 0; x < 16; x++) {
             for (int z = 0; z < 16; z++) {
-                int worldX = chunkX * 16 + x;
-                int worldZ = chunkZ * 16 + z;
-                generatePlotAt(chunkData, worldX, worldZ);
+                generatePlotAt(chunkData, startX + x, startZ + z);
             }
         }
     }

@@ -36,6 +36,10 @@ public class PlotCommand implements CommandExecutor {
         switch (args[0].toLowerCase()) {
             case "create":
                 return handleCreateCommand(player);
+            case "claim":
+                return handleClaimCommand(player);
+            case "delete":
+                return handleDeleteCommand(player);
             case "teleport":
             case "tp":
                 return handleTeleportCommand(player, args);
@@ -46,17 +50,67 @@ public class PlotCommand implements CommandExecutor {
     }
 
     private boolean handleCreateCommand(Player player) {
-        Location location = plotManager.findNearestUnclaimedPlot(player.getWorld());
+        Location location = plotManager.findNearestUnclaimedPlot(plugin.getServer().getWorld("TycoonWorld"));
         if (location == null) {
             player.sendMessage(ChatColor.RED + "No available plots found.");
             return true;
         }
 
         if (plotManager.claimPlot(player, location)) {
-            player.teleport(location.add(0.5, 1, 0.5)); // Teleport to the center of the plot
+            // Ensure the chunk is loaded before teleporting
+            location.getChunk().load();
+            // Get the teleport location
+            Location teleportLocation = plotManager.getPlotTeleportLocation(location);
+            player.teleport(teleportLocation);
             player.sendMessage(ChatColor.GREEN + "You have successfully created and claimed a new plot!");
         } else {
             player.sendMessage(ChatColor.RED + "Failed to create a new plot. You may have reached the maximum number of plots.");
+        }
+        return true;
+    }
+
+    private boolean handleClaimCommand(Player player) {
+        Location playerLocation = player.getLocation();
+        if (!plotManager.isInPlot(playerLocation)) {
+            player.sendMessage(ChatColor.RED + "You must be standing in an unclaimed plot to claim it.");
+            return true;
+        }
+
+        if (plotManager.isPlotOwned(playerLocation)) {
+            player.sendMessage(ChatColor.RED + "This plot is already owned.");
+            return true;
+        }
+
+        if (plotManager.claimPlot(player, playerLocation)) {
+            player.sendMessage(ChatColor.GREEN + "You have successfully claimed this plot!");
+        } else {
+            player.sendMessage(ChatColor.RED + "Failed to claim the plot. You may have reached the maximum number of plots.");
+        }
+        return true;
+    }
+
+    private boolean handleDeleteCommand(Player player) {
+        Location playerLocation = player.getLocation();
+        if (!plotManager.isInPlot(playerLocation)) {
+            player.sendMessage(ChatColor.RED + "You must be standing in your plot to delete it.");
+            return true;
+        }
+
+        if (!plotManager.isPlotOwned(playerLocation)) {
+            player.sendMessage(ChatColor.RED + "This plot is not owned by anyone.");
+            return true;
+        }
+
+        Plot plot = plotManager.getPlotAt(playerLocation);
+        if (plot == null || !plot.isOwner(player.getUniqueId())) {
+            player.sendMessage(ChatColor.RED + "You don't own this plot.");
+            return true;
+        }
+
+        if (plotManager.unclaimPlot(player, playerLocation)) {
+            player.sendMessage(ChatColor.GREEN + "You have successfully deleted your plot.");
+        } else {
+            player.sendMessage(ChatColor.RED + "Failed to delete the plot. Please try again.");
         }
         return true;
     }
@@ -81,9 +135,9 @@ public class PlotCommand implements CommandExecutor {
             return true;
         }
 
-        // Teleport to the center of the plot
-        plotLocation.add(PlotWorld.PLOT_SIZE / 2.0, 1, PlotWorld.PLOT_SIZE / 2.0);
-        player.teleport(plotLocation);
+        // Get the teleport location
+        Location teleportLocation = plotManager.getPlotTeleportLocation(plotLocation);
+        player.teleport(teleportLocation);
         player.sendMessage(ChatColor.GREEN + "Teleported to your plot #" + plotNumber);
         return true;
     }
@@ -91,7 +145,8 @@ public class PlotCommand implements CommandExecutor {
     private void sendHelpMessage(Player player) {
         player.sendMessage(ChatColor.GOLD + "=== TycoonWorld Plot Commands ===");
         player.sendMessage(ChatColor.YELLOW + "/plot create - Create and claim a new plot");
+        player.sendMessage(ChatColor.YELLOW + "/plot claim - Claim the plot you're standing in");
+        player.sendMessage(ChatColor.YELLOW + "/plot delete - Delete the plot you're standing in");
         player.sendMessage(ChatColor.YELLOW + "/plot teleport <number> - Teleport to your plot");
-        // Add more command descriptions as needed
     }
 }
